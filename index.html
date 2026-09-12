@@ -27,6 +27,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .viewer[data-weather="cloudy"][data-time="day"] { background: radial-gradient(circle at 52% 44%, rgba(255,255,255,.15), transparent 38%), #a9bdc8; }
 #sceneCanvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; outline: none; }
 #sceneCanvas:active { cursor: grabbing; }
+.snow-overlay { position: absolute; z-index: 6; inset: -12vh 0 0; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .55s ease; }
+.viewer[data-weather="snow"] .snow-overlay { opacity: 1; }
+.snow-flake { position: absolute; top: -12vh; left: var(--left); color: rgba(255,255,255,.98); font-size: var(--size); line-height: 1; text-shadow: 0 0 7px rgba(145,193,226,.95), 0 2px 3px rgba(70,102,128,.4); animation: snow-fall var(--duration) linear var(--delay) infinite; will-change: transform; }
+@keyframes snow-fall {
+  0% { transform: translate3d(0, -8vh, 0) rotate(0deg); }
+  48% { transform: translate3d(calc(var(--drift) * .42), 60vh, 0) rotate(170deg); }
+  100% { transform: translate3d(var(--drift), 124vh, 0) rotate(360deg); }
+}
 .topbar { position: absolute; z-index: 8; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: max(18px, env(safe-area-inset-top)) clamp(18px, 3vw, 44px) 12px; pointer-events: none; }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 15px; color: #16263f; background: var(--yellow); box-shadow: 0 12px 30px rgba(39, 57, 80, .14); font-size: 29px; font-weight: 900; transform: rotate(-10deg); }
@@ -45,6 +53,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .zoom-controls { position: absolute; z-index: 8; right: clamp(18px, 3vw, 44px); top: 50%; transform: translateY(-50%); display: grid; gap: 8px; }
 .zoom-controls button { width: 44px; height: 44px; border: 1px solid rgba(255,255,255,.7); border-radius: 15px; background: rgba(255,255,255,.7); color: var(--ink); box-shadow: 0 10px 28px rgba(39,57,80,.13); backdrop-filter: blur(12px); cursor: pointer; font-size: 24px; line-height: 1; transition: .18s ease; }
 .zoom-controls button:hover { background: white; transform: translateY(-2px); }
+.audio-control { position: absolute; z-index: 9; right: clamp(18px, 3vw, 44px); top: max(82px, calc(env(safe-area-inset-top) + 70px)); }
+.audio-control button { width: 58px; height: 58px; padding: 7px 5px 6px; display: grid; place-items: center; gap: 1px; border: 1px solid rgba(255,255,255,.72); border-radius: 19px; background: rgba(255,255,255,.7); color: var(--ink); box-shadow: 0 10px 28px rgba(39,57,80,.13); backdrop-filter: blur(12px); cursor: pointer; transition: .2s ease; }
+.audio-control button:hover { background: white; transform: translateY(-2px); }
+.audio-control button[aria-pressed="true"] { background: var(--yellow); border-color: rgba(255,255,255,.8); box-shadow: 0 9px 24px rgba(183,137,25,.24); }
+.audio-control button > span { font-size: 22px; line-height: 1; }
+.audio-control button small { color: inherit; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+[data-time="night"] .audio-control button:not([aria-pressed="true"]) { background: rgba(255,255,255,.78); }
 .view-status { position: absolute; z-index: 8; left: clamp(18px, 3vw, 44px); top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: left top; color: rgba(25,39,62,.48); font-size: 10px; font-weight: 900; letter-spacing: .18em; }
 [data-time="night"] .view-status { color: rgba(255,255,255,.5); }
 .control-dock { position: absolute; z-index: 10; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(94vw, 840px); padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 12px; border: 1px solid rgba(255,255,255,.78); border-radius: 27px; background: var(--cream); backdrop-filter: blur(22px) saturate(1.2); box-shadow: 0 24px 55px rgba(41,61,86,.19); }
@@ -72,6 +87,9 @@ noscript { position: fixed; z-index: 50; inset: 0; display: grid; place-items: c
   .gesture-hint span:last-child, .gesture-hint i { display: none; }
   .zoom-controls { right: 12px; }
   .zoom-controls button { width: 40px; height: 40px; border-radius: 13px; }
+  .audio-control { right: 12px; top: max(66px, calc(env(safe-area-inset-top) + 54px)); }
+  .audio-control button { width: 48px; height: 48px; border-radius: 15px; }
+  .audio-control button > span { font-size: 19px; }
   .view-status { display: none; }
   .control-dock { bottom: max(10px, env(safe-area-inset-bottom)); width: calc(100vw - 20px); padding: 7px 8px; gap: 2px 5px; border-radius: 22px; flex-wrap: wrap; justify-content: center; }
   .dock-group { gap: 2px; }
@@ -94,6 +112,7 @@ noscript { position: fixed; z-index: 50; inset: 0; display: grid; place-items: c
   <body>
     <main class="viewer" id="viewer" data-time="day" data-weather="clear">
       <canvas id="sceneCanvas" aria-label="Interactive 3D miniature of Moon Mart. Drag to rotate and scroll or pinch to zoom."></canvas>
+      <div class="snow-overlay" id="snowOverlay" aria-hidden="true"></div>
 
       <header class="topbar">
         <div class="brand" aria-label="Moon Mart Interactive Miniature">
@@ -115,6 +134,13 @@ noscript { position: fixed; z-index: 50; inset: 0; display: grid; place-items: c
       <div class="zoom-controls" aria-label="Zoom controls">
         <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
         <button id="zoomOut" type="button" aria-label="Zoom out">−</button>
+      </div>
+
+      <div class="audio-control">
+        <button id="musicButton" type="button" aria-label="Play ambient music" aria-pressed="false">
+          <span aria-hidden="true">♪</span>
+          <small>MUSIC</small>
+        </button>
       </div>
 
       <div class="view-status" id="viewStatus" aria-live="polite">DAY · CLEAR</div>
@@ -2010,6 +2036,8 @@ const viewer = document.querySelector("#viewer");
 const loadingLayer = document.querySelector("#loadingLayer");
 const gestureHint = document.querySelector("#gestureHint");
 const statusLabel = document.querySelector("#viewStatus");
+const snowOverlay = document.querySelector("#snowOverlay");
+for(let i=0;i<72;i+=1){const flake=document.createElement("span");flake.className="snow-flake";flake.textContent=i%5===0?"❄":i%3===0?"✦":"•";const duration=5.8+Math.random()*6.4;flake.style.setProperty("--left",`${Math.random()*100}%`);flake.style.setProperty("--size",`${8+Math.random()*17}px`);flake.style.setProperty("--duration",`${duration}s`);flake.style.setProperty("--delay",`${-Math.random()*duration}s`);flake.style.setProperty("--drift",`${ -55+Math.random()*110}px`);flake.style.opacity=String(.58+Math.random()*.42);snowOverlay.append(flake);}
 const renderer = new ca({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
@@ -2187,26 +2215,80 @@ const carPaint = new Vl({color:0x779a45,roughness:.4,metalness:.28});
 car.add(box(2.35,.48,1.05,carPaint,0,.38,0)); car.add(box(1.38,.48,.92,carPaint,-0.1,.77,0)); car.add(box(.72,.3,.02,new Vl({color:0x273b54,roughness:.2}),-0.28,.82,.47,false));
 for(const x of [-0.72,.72]) for(const z of [-0.5,.5]){ const w=new Dn$1(new uh(.23,.23,.15,16),wheelMat); w.position.set(x,.22,z); w.rotation.x=Math.PI/2; w.castShadow=true; car.add(w); } world.add(car);
 
+const cloudField = new ra$1();
+const cloudMaterials = [
+  new Vl({ color: 0xf1f5f6, roughness: 1, transparent: true, opacity: .94, depthWrite: false }),
+  new Vl({ color: 0xd8e2e8, roughness: 1, transparent: true, opacity: .9, depthWrite: false }),
+];
+const cloudGeometry = new mh(1, 1);
+function addCloud(x, y, z, scale, drift, phase) {
+  const group = new ra$1();
+  group.position.set(x, y, z);
+  group.scale.setScalar(scale);
+  group.userData = { baseY: y, drift, phase };
+  const puffs = [
+    [-1.2, -0.04, 0, .95, .62, .72],
+    [-0.52, .34, .02, 1.12, .88, .84],
+    [.3, .45, -0.04, 1.26, 1.0, .92],
+    [1.16, .08, .03, 1.0, .7, .78],
+    [.02, -0.18, .06, 1.68, .56, .84],
+  ];
+  puffs.forEach(([px, py, pz, sx, sy, sz], index) => {
+    const puff = new Dn$1(cloudGeometry, cloudMaterials[index % cloudMaterials.length]);
+    puff.position.set(px, py, pz);
+    puff.scale.set(sx, sy, sz);
+    puff.rotation.set(index * .11, index * .23, index * .08);
+    group.add(puff);
+  });
+  cloudField.add(group);
+}
+addCloud(-6.6, 7.25, -2.8, 1.2, .18, .2);
+addCloud(.4, 7.7, -5.2, 1.45, .13, 2.1);
+addCloud(6.4, 6.85, -1.6, 1.05, .2, 4.2);
+cloudField.visible = false;
+scene.add(cloudField);
+
 function makeDotTexture(color) { const c=document.createElement("canvas"); c.width=32;c.height=32;const ctx=c.getContext("2d");const grad=ctx.createRadialGradient(16,16,0,16,16,15);grad.addColorStop(0,color);grad.addColorStop(.45,color);grad.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=grad;ctx.fillRect(0,0,32,32);return new ah(c); }
+function makeSnowflakeTexture() { const c=document.createElement("canvas");c.width=64;c.height=64;const ctx=c.getContext("2d");ctx.translate(32,32);ctx.strokeStyle="rgba(255,255,255,.98)";ctx.lineWidth=3.2;ctx.lineCap="round";ctx.shadowColor="rgba(165,210,242,.85)";ctx.shadowBlur=6;for(let i=0;i<3;i+=1){ctx.save();ctx.rotate(i*Math.PI/3);ctx.beginPath();ctx.moveTo(-23,0);ctx.lineTo(23,0);ctx.stroke();for(const direction of [-1,1]){ctx.save();ctx.scale(direction,1);ctx.beginPath();ctx.moveTo(13,0);ctx.lineTo(18,-5);ctx.moveTo(13,0);ctx.lineTo(18,5);ctx.stroke();ctx.restore();}ctx.restore();}return new ah(c); }
 function randomPositions(count, spreadX, spreadY, spreadZ, yOffset=0) { const array=new Float32Array(count*3);for(let i=0;i<count;i+=1){array[i*3]=(Math.random()-.5)*spreadX;array[i*3+1]=Math.random()*spreadY+yOffset;array[i*3+2]=(Math.random()-.5)*spreadZ;}return array; }
 const petalGeometry=new In$1();petalGeometry.setAttribute("position",new dn(randomPositions(95,11,8,9,.5),3));const petals=new Qo(petalGeometry,new Xo({color:0xf596b6,size:.12,map:makeDotTexture("rgba(255,178,207,1)"),transparent:true,depthWrite:false,opacity:.8}));scene.add(petals);
-const snowGeometry=new In$1();snowGeometry.setAttribute("position",new dn(randomPositions(340,18,13,14,0),3));const snow=new Qo(snowGeometry,new Xo({color:0xffffff,size:.16,map:makeDotTexture("rgba(255,255,255,1)"),transparent:true,depthWrite:false,opacity:.9}));snow.visible=false;scene.add(snow);
+const snowTexture=makeSnowflakeTexture();
+const snowGeometry=new In$1();snowGeometry.setAttribute("position",new dn(randomPositions(680,22,16,20,-1),3));const snow=new Qo(snowGeometry,new Xo({color:0xf7fbff,size:.24,map:snowTexture,transparent:true,depthWrite:false,opacity:.94,alphaTest:.035}));snow.visible=false;snow.frustumCulled=false;scene.add(snow);
+const snowFrontGeometry=new In$1();snowFrontGeometry.setAttribute("position",new dn(randomPositions(240,24,17,10,-1),3));const snowFront=new Qo(snowFrontGeometry,new Xo({color:0xffffff,size:.42,map:snowTexture,transparent:true,depthWrite:false,depthTest:false,opacity:.98,alphaTest:.025}));snowFront.visible=false;snowFront.frustumCulled=false;snowFront.renderOrder=30;scene.add(snowFront);
 const rainCount=300;const rainArray=new Float32Array(rainCount*6);for(let i=0;i<rainCount;i+=1){const x=(Math.random()-.5)*18,y=Math.random()*13,z=(Math.random()-.5)*14;rainArray.set([x,y,z,x-.06,y-.42,z],i*6);}const rainGeometry=new In$1();rainGeometry.setAttribute("position",new dn(rainArray,3));const rain=new qo(rainGeometry,new Ro({color:0xd9f0ff,transparent:true,opacity:.62}));rain.visible=false;scene.add(rain);
 const starGeometry=new In$1();starGeometry.setAttribute("position",new dn(randomPositions(160,30,13,24,5),3));const stars=new Qo(starGeometry,new Xo({color:0xfff8d6,size:.08,transparent:true,opacity:.86,depthWrite:false}));stars.visible=false;scene.add(stars);
 
-const state={time:"day",weather:"clear",roofOpen:false,autoRotate:false};
+const state={time:"day",weather:"clear",roofOpen:false,autoRotate:false,musicOn:false};
 const timeStyles={day:{bg:0xbed7e5,hemi:2.15,sun:4.2,sunColor:0xfff2d8,exposure:1.03,lamps:0,window:.24},dusk:{bg:0x9faec9,hemi:1.35,sun:2.6,sunColor:0xffb47d,exposure:.96,lamps:1.8,window:.82},night:{bg:0x243650,hemi:.55,sun:.72,sunColor:0x9ab9ff,exposure:.86,lamps:4.0,window:1.5}};
-function updateButtons(){document.querySelectorAll("[data-time-value]").forEach((button)=>{const active=button.dataset.timeValue===state.time;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});document.querySelectorAll("[data-weather-value]").forEach((button)=>{const active=button.dataset.weatherValue===state.weather;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});const roofButton=document.querySelector("#roofButton");roofButton.classList.toggle("active",state.roofOpen);roofButton.setAttribute("aria-pressed",String(state.roofOpen));roofButton.setAttribute("aria-label",state.roofOpen?"Close roof":"Open roof");const autoButton=document.querySelector("#autoButton");autoButton.classList.toggle("active",state.autoRotate);autoButton.setAttribute("aria-pressed",String(state.autoRotate));autoButton.setAttribute("aria-label",state.autoRotate?"Stop auto rotation":"Start auto rotation");statusLabel.textContent=`${state.time.toUpperCase()} · ${state.weather.toUpperCase()}`;}
-function setAtmosphere(time=state.time,weather=state.weather){if(!["day","dusk","night"].includes(time))throw new Error("Invalid time of day");if(!["clear","cloudy","rain","snow"].includes(weather))throw new Error("Invalid weather");state.time=time;state.weather=weather;viewer.dataset.time=time;viewer.dataset.weather=weather;const style=timeStyles[time];const cloudy=weather==="cloudy";const rainMode=weather==="rain";scene.background.set(cloudy&&time==="day"?0xa9bdc8:style.bg);scene.fog.color.copy(scene.background);hemi.intensity=style.hemi*(cloudy?.78:1);sun.intensity=style.sun*(cloudy?.68:rainMode?.58:1);sun.color.set(style.sunColor);renderer.toneMappingExposure=style.exposure*(cloudy?.94:1);streetLights.forEach((light)=>light.intensity=style.lamps);bulbMaterial.emissiveIntensity=time==="day"?.35:time==="dusk"?1.45:2.2;materials.warmGlass.emissiveIntensity=style.window;stars.visible=time==="night"&&weather!=="cloudy"&&weather!=="rain";rain.visible=weather==="rain";snow.visible=weather==="snow";petals.visible=weather==="clear";updateButtons();return {time:state.time,weather:state.weather};}
+function updateButtons(){document.querySelectorAll("[data-time-value]").forEach((button)=>{const active=button.dataset.timeValue===state.time;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});document.querySelectorAll("[data-weather-value]").forEach((button)=>{const active=button.dataset.weatherValue===state.weather;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});const roofButton=document.querySelector("#roofButton");roofButton.classList.toggle("active",state.roofOpen);roofButton.setAttribute("aria-pressed",String(state.roofOpen));roofButton.setAttribute("aria-label",state.roofOpen?"Close roof":"Open roof");const autoButton=document.querySelector("#autoButton");autoButton.classList.toggle("active",state.autoRotate);autoButton.setAttribute("aria-pressed",String(state.autoRotate));autoButton.setAttribute("aria-label",state.autoRotate?"Stop auto rotation":"Start auto rotation");const musicButton=document.querySelector("#musicButton");musicButton.setAttribute("aria-pressed",String(state.musicOn));musicButton.setAttribute("aria-label",state.musicOn?"Pause ambient music":"Play ambient music");statusLabel.textContent=`${state.time.toUpperCase()} · ${state.weather.toUpperCase()}`;}
+function setAtmosphere(time=state.time,weather=state.weather){if(!["day","dusk","night"].includes(time))throw new Error("Invalid time of day");if(!["clear","cloudy","rain","snow"].includes(weather))throw new Error("Invalid weather");state.time=time;state.weather=weather;viewer.dataset.time=time;viewer.dataset.weather=weather;const style=timeStyles[time];const cloudy=weather==="cloudy";const rainMode=weather==="rain";const snowMode=weather==="snow";const overcast=cloudy||rainMode||snowMode;const weatherBg=time==="day"?(snowMode?0x91aebf:rainMode?0x849eae:cloudy?0xa4b8c3:style.bg):style.bg;scene.background.set(weatherBg);scene.fog.color.copy(scene.background);scene.fog.near=rainMode||snowMode?17:20;scene.fog.far=rainMode||snowMode?29:34;hemi.intensity=style.hemi*(cloudy?.78:rainMode?.66:snowMode?.72:1);sun.intensity=style.sun*(cloudy?.68:rainMode?.5:snowMode?.58:1);sun.color.set(style.sunColor);renderer.toneMappingExposure=style.exposure*(overcast?.93:1);streetLights.forEach((light)=>light.intensity=style.lamps);bulbMaterial.emissiveIntensity=time==="day"?.35:time==="dusk"?1.45:2.2;materials.warmGlass.emissiveIntensity=style.window;stars.visible=time==="night"&&weather==="clear";cloudField.visible=overcast;cloudMaterials[0].color.set(time==="night"?0x77889d:rainMode?0xc1ccd2:snowMode?0xe5edf1:0xf1f5f6);cloudMaterials[1].color.set(time==="night"?0x52657c:rainMode?0x96a7b2:snowMode?0xc7d7df:0xd8e2e8);rain.visible=rainMode;snow.visible=snowMode;snowFront.visible=snowMode;petals.visible=weather==="clear";updateButtons();return {time:state.time,weather:state.weather};}
 function setView(options={}){if(typeof options.roofOpen==="boolean")state.roofOpen=options.roofOpen;if(typeof options.autoRotate==="boolean")state.autoRotate=options.autoRotate;roofGroup.visible=!state.roofOpen;controls.autoRotate=state.autoRotate;updateButtons();return {roofOpen:state.roofOpen,autoRotate:state.autoRotate};}
 function resetCamera(){camera.position.set(12,10,14);camera.zoom=.9;camera.updateProjectionMatrix();controls.target.set(0,1.35,0);controls.update();return {status:"reset"};}
+
+let audioContext;
+let musicMaster;
+let musicFilter;
+let nextChordTime=0;
+let chordIndex=0;
+const chordProgression=[
+  [130.81,164.81,196.0,246.94],
+  [110.0,146.83,174.61,220.0],
+  [98.0,130.81,164.81,196.0],
+  [116.54,146.83,196.0,233.08],
+];
+function makeReverb(context,duration=3.4,decay=2.7){const rate=context.sampleRate;const length=Math.floor(rate*duration);const impulse=context.createBuffer(2,length,rate);for(let channel=0;channel<2;channel+=1){const data=impulse.getChannelData(channel);for(let i=0;i<length;i+=1){data[i]=(Math.random()*2-1)*Math.pow(1-i/length,decay);}}return impulse;}
+function scheduleAmbientChord(startTime,frequencies){if(!audioContext||!musicFilter)return;const duration=8.4;frequencies.forEach((frequency,index)=>{const oscillator=audioContext.createOscillator();const voiceGain=audioContext.createGain();oscillator.type=index%2===0?"sine":"triangle";oscillator.frequency.setValueAtTime(frequency,startTime);oscillator.detune.setValueAtTime([-5,2,-2,5][index],startTime);voiceGain.gain.setValueAtTime(.0001,startTime);voiceGain.gain.exponentialRampToValueAtTime(index===0?.036:.022,startTime+2.2);voiceGain.gain.setValueAtTime(index===0?.036:.022,startTime+5.6);voiceGain.gain.exponentialRampToValueAtTime(.0001,startTime+duration);oscillator.connect(voiceGain);voiceGain.connect(musicFilter);oscillator.start(startTime);oscillator.stop(startTime+duration+.1);});const bell=audioContext.createOscillator();const bellGain=audioContext.createGain();bell.type="sine";bell.frequency.setValueAtTime(frequencies[2]*2,startTime+1.1);bellGain.gain.setValueAtTime(.0001,startTime+1.1);bellGain.gain.exponentialRampToValueAtTime(.018,startTime+1.16);bellGain.gain.exponentialRampToValueAtTime(.0001,startTime+3.8);bell.connect(bellGain);bellGain.connect(musicFilter);bell.start(startTime+1.1);bell.stop(startTime+3.9);}
+function queueAmbientMusic(){if(!audioContext||audioContext.state==="closed")return;while(nextChordTime<audioContext.currentTime+16){scheduleAmbientChord(nextChordTime,chordProgression[chordIndex%chordProgression.length]);nextChordTime+=7.5;chordIndex+=1;}}
+function ensureMusicEngine(){if(audioContext)return;const AudioContextClass=window.AudioContext||window.webkitAudioContext;if(!AudioContextClass)return;audioContext=new AudioContextClass();musicMaster=audioContext.createGain();musicMaster.gain.setValueAtTime(.0001,audioContext.currentTime);musicFilter=audioContext.createBiquadFilter();musicFilter.type="lowpass";musicFilter.frequency.setValueAtTime(1150,audioContext.currentTime);musicFilter.Q.setValueAtTime(.4,audioContext.currentTime);const dry=audioContext.createGain();dry.gain.value=.66;const convolver=audioContext.createConvolver();convolver.buffer=makeReverb(audioContext);const wet=audioContext.createGain();wet.gain.value=.31;musicFilter.connect(dry);dry.connect(musicMaster);musicFilter.connect(convolver);convolver.connect(wet);wet.connect(musicMaster);musicMaster.connect(audioContext.destination);nextChordTime=audioContext.currentTime+.08;queueAmbientMusic();window.setInterval(queueAmbientMusic,1200);}
+async function setMusic(enabled){state.musicOn=Boolean(enabled);ensureMusicEngine();if(!audioContext){state.musicOn=false;updateButtons();return {musicOn:false,supported:false};}if(state.musicOn){await audioContext.resume();nextChordTime=Math.max(nextChordTime,audioContext.currentTime+.05);queueAmbientMusic();musicMaster.gain.cancelScheduledValues(audioContext.currentTime);musicMaster.gain.setValueAtTime(Math.max(musicMaster.gain.value,.0001),audioContext.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.72,audioContext.currentTime+.8);}else {musicMaster.gain.cancelScheduledValues(audioContext.currentTime);musicMaster.gain.setValueAtTime(Math.max(musicMaster.gain.value,.0001),audioContext.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audioContext.currentTime+.45);window.setTimeout(()=>{if(!state.musicOn&&audioContext?.state==="running")void audioContext.suspend();},520);}updateButtons();return {musicOn:state.musicOn,supported:true};}
 document.querySelectorAll("[data-time-value]").forEach((button)=>button.addEventListener("click",()=>setAtmosphere(button.dataset.timeValue,state.weather)));
 document.querySelectorAll("[data-weather-value]").forEach((button)=>button.addEventListener("click",()=>setAtmosphere(state.time,button.dataset.weatherValue)));
 document.querySelector("#roofButton").addEventListener("click",()=>setView({roofOpen:!state.roofOpen}));document.querySelector("#autoButton").addEventListener("click",()=>setView({autoRotate:!state.autoRotate}));document.querySelector("#resetButton").addEventListener("click",resetCamera);
+document.querySelector("#musicButton").addEventListener("click",()=>{void setMusic(!state.musicOn);});
 document.querySelector("#zoomIn").addEventListener("click",()=>{camera.zoom=Math.min(controls.maxZoom,camera.zoom+.16);camera.updateProjectionMatrix();});document.querySelector("#zoomOut").addEventListener("click",()=>{camera.zoom=Math.max(controls.minZoom,camera.zoom-.16);camera.updateProjectionMatrix();});controls.addEventListener("start",()=>gestureHint.classList.add("used"));
 function resize(){const width=window.innerWidth,height=window.innerHeight,aspect=width/height;if(aspect>=1){camera.left=-frustumSize*aspect/2;camera.right=frustumSize*aspect/2;camera.top=frustumSize/2;camera.bottom=-frustumSize/2;}else {camera.left=-frustumSize/2;camera.right=frustumSize/2;camera.top=frustumSize/aspect/2;camera.bottom=-frustumSize/aspect/2;}camera.updateProjectionMatrix();renderer.setSize(width,height,false);}window.addEventListener("resize",resize,{passive:true});resize();
-const clock=new uu();function fall(attribute,speed,spreadX){const arr=attribute.array;for(let i=0;i<arr.length;i+=3){arr[i+1]-=speed;if(arr[i+1]<-0.2){arr[i+1]=12+Math.random()*2;arr[i]=(Math.random()-.5)*spreadX;}}attribute.needsUpdate=true;}
-function animate(){const dt=Math.min(clock.getDelta(),.035);controls.update();if(petals.visible){const attr=petalGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=3){arr[i]+=(Math.sin(performance.now()*.001+i)*.12)*dt;arr[i+1]-=.38*dt;if(arr[i+1]<.1){arr[i+1]=7+Math.random()*2;arr[i]=(Math.random()-.5)*10;}}attr.needsUpdate=true;petals.rotation.y+=dt*.012;}if(snow.visible){const attr=snowGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=3)arr[i]+=Math.sin(performance.now()*.001+i)*.13*dt;fall(attr,1.15*dt,18);}if(rain.visible){const attr=rainGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=6){arr[i+1]-=8.8*dt;arr[i+4]-=8.8*dt;if(arr[i+1]<0){const y=12+Math.random()*2;arr[i+1]=y;arr[i+4]=y-.42;}}attr.needsUpdate=true;}renderer.render(scene,camera);requestAnimationFrame(animate);}
+const clock=new uu();function fall(attribute,speed,spreadX,top=14){const arr=attribute.array;for(let i=0;i<arr.length;i+=3){arr[i+1]-=speed;if(arr[i+1]<-0.8){arr[i+1]=top+Math.random()*2;arr[i]=(Math.random()-.5)*spreadX;}}attribute.needsUpdate=true;}
+function animate(){const dt=Math.min(clock.getDelta(),.035);const now=performance.now()*.001;controls.update();if(cloudField.visible){cloudField.children.forEach((cloud)=>{cloud.position.x+=cloud.userData.drift*dt;if(cloud.position.x>9.5)cloud.position.x=-9.5;cloud.position.y=cloud.userData.baseY+Math.sin(now*.35+cloud.userData.phase)*.12;});}if(petals.visible){const attr=petalGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=3){arr[i]+=(Math.sin(now+i)*.12)*dt;arr[i+1]-=.38*dt;if(arr[i+1]<.1){arr[i+1]=7+Math.random()*2;arr[i]=(Math.random()-.5)*10;}}attr.needsUpdate=true;petals.rotation.y+=dt*.012;}if(snow.visible){const attr=snowGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=3)arr[i]+=(Math.sin(now*1.5+i*.7)*.38+.13)*dt;fall(attr,1.65*dt,22,14);}if(snowFront.visible){const attr=snowFrontGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=3)arr[i]+=(Math.sin(now*1.8+i*.55)*.52+.18)*dt;fall(attr,2.05*dt,24,15);}if(rain.visible){const attr=rainGeometry.attributes.position;const arr=attr.array;for(let i=0;i<arr.length;i+=6){arr[i+1]-=8.8*dt;arr[i+4]-=8.8*dt;if(arr[i+1]<0){const y=12+Math.random()*2;arr[i+1]=y;arr[i+4]=y-.42;}}attr.needsUpdate=true;}renderer.render(scene,camera);requestAnimationFrame(animate);}
 function registerWebMcp(){const context=document.modelContext;if(!context?.registerTool)return;const register=(tool)=>{try{void Promise.resolve(context.registerTool(tool)).catch((error)=>console.warn("WebMCP registration failed",error));}catch(error){console.warn("WebMCP registration failed",error);}};register({name:"set_moon_mart_atmosphere",title:"Set scene atmosphere",description:"Change the visible Moon Mart scene time and weather.",inputSchema:{type:"object",properties:{time:{type:"string",enum:["day","dusk","night"]},weather:{type:"string",enum:["clear","cloudy","rain","snow"]}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:(input)=>setAtmosphere(input?.time??state.time,input?.weather??state.weather)});register({name:"set_moon_mart_view",title:"Set scene view",description:"Open or close the roof and enable or disable automatic 360-degree rotation.",inputSchema:{type:"object",properties:{roofOpen:{type:"boolean"},autoRotate:{type:"boolean"}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:(input)=>setView(input??{})});register({name:"reset_moon_mart_camera",title:"Reset scene camera",description:"Return the visible 3D scene to its original isometric camera angle.",inputSchema:{type:"object",properties:{},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:()=>resetCamera()});}
 setAtmosphere("day","clear");registerWebMcp();animate();requestAnimationFrame(()=>requestAnimationFrame(()=>{loadingLayer.classList.add("ready");setTimeout(()=>{loadingLayer.hidden=true;},650);}));})();</script>
   </body>
